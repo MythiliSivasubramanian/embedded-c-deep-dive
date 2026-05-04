@@ -1,0 +1,1 @@
+This folder is for C Structures practice in the Embedded C Deep Dive repository.
