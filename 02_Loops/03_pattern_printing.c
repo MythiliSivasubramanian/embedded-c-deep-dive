@@ -3,6 +3,7 @@
 
     Topics Covered:
     1. Right Half Pyramid
+    2. Inverted Right half Pyramid
    
 */
 
@@ -33,6 +34,24 @@ int main()
         printf("\n");
     }
     
+    
+    // 2. Inverted Right half Pyramid
+    
+     printf("\n\n2. Inverted Right Half Pyramid\n\n");
+
+    /*
+        stars = rows - i + 1
+    */
+
+    for (int i = 1; i <= rows; i++)
+    {
+        for (int j = 1; j <= rows - i + 1; j++)
+        {
+            printf("*");
+        }
+
+        printf("\n");
+    }
     return 0;
     
 }
