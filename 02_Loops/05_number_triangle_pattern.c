@@ -16,6 +16,14 @@ Basic triangle patterns using nested loops.
     4 4 4 4
     5 5 5 5 5
     
+3. Print the below
+
+        *
+       **
+      ***
+     ****
+    *****
+  
 */
 
 #include <stdio.h>
@@ -56,7 +64,32 @@ int main()
         
         printf("\n");
     }
-
-    return 0; // Upon successfull execution
+    
+    
+    
+    // Task 3
+    printf("\n\nTask 3 : \n\n");
+    
+    // Outer loop controls the total number of rows
+    for(row = 1; row <= total_rows; row++)
+    {
+        
+        // 1st inner loop controls iterations of spaces on each row
+        for(column = 1; column <= total_rows - row; column++)
+        {
+            printf(" ");
+        }
+        
+        // 2nd inner loop controls iterations of stars on each row
+        for(column = 1; column <= row; column++)
+        {
+            printf("*");
+        }
+        
+        printf("\n");
+    }
+    
+    return 0; // Upon sucessfull execution
+    
     
 }
