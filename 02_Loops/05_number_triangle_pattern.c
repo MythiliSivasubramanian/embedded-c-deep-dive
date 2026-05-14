@@ -1,12 +1,20 @@
 /*
 Basic triangle patterns using nested loops.
-1. Right anfle triangle with numbers.
+1. Right angle triangle with same row numbers.
 
     1
     1 2
     1 2 3
     1 2 3 4
     1 2 3 4 5
+    
+2. Right angle triangle with repeated different row numbers
+
+    1
+    2 2
+    3 3 3
+    4 4 4 4
+    5 5 5 5 5
     
 */
 
@@ -16,6 +24,9 @@ int main()
 {
     int total_rows = 5;
     int row,column;
+    
+    printf("\n\nBasic triangles with numbers using nested loops\n\n");
+    printf("\n\n1. Right angle triangle with same row numbers :\n\n");
     
     // Outer for loop controls the total number of rows(5)
     for(row = 1; row <= total_rows; row++)
@@ -30,6 +41,22 @@ int main()
         printf("\n");
     }
     
-    return 0;
+    // 2. Right angle triangle with repeated different row numbers
+    printf("\n\n2. Right angle triangle with repeated different row numbers :\n\n");
+    
+    // Outer loop controls the total number of rows
+    for(row = 1; row <= total_rows; row++)
+    {
+        // Inner loops controls how many time the row number is printed
+        for(column = 1; column <= row; column++)
+        {
+            // The row numbers needs to be row'th times repeated
+            printf("%d ", row);
+        }
+        
+        printf("\n");
+    }
+
+    return 0; // Upon successfull execution
     
 }
