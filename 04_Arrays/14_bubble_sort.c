@@ -30,6 +30,8 @@ int main(void)
         // Bubble sort repeatedly compares adjacent elements
         // and swaps them if they are in the wrong order.
         for(int j = 0; j < SIZE - 1 - pass; j++)
+        // after each pass, the largest unsorted element moves to its correct position at the end.
+        // Hence SIZE - pass - 1
         {
             if(numbers[j] > numbers[j + 1])
             {
