@@ -1,1 +1,0 @@
-This folder is for C pointers practice in the Embedded C Deep Dive repository.
