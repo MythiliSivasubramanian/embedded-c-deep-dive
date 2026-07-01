@@ -23,6 +23,9 @@ My goal is to build strong fundamentals in:
 - Pointers
 - Structures
 - Bitwise Operators
+- Storage Classes
+- Preprocessors
+- Enums and Typedefs
 
 ## Tools & Technologies
 - C
