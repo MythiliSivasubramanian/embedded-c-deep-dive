@@ -108,3 +108,80 @@ ptr
 `p1.age` and `(&p1)->age` are equivalent because `&p1` gives us the address of `p1`, which is a pointer to the structure.
 Also, ```c ptr->age ``` is equivalent to ```c (*ptr).age``` because `*ptr` gives us the structure itself, and then `.` is used to access its member.
 
+---
+
+## struct vs union
+
+```c
+struct Example
+{
+    int a;
+    int b;
+};
+```
+
+A struct needs space for both `a` and `b`. If `int = 4 bytes`:
+
+```text
+struct Example
+┌──────────────┐
+│ a            │ 4 bytes
+├──────────────┤
+│ b            │ 4 bytes
+└──────────────┘
+
+Total = 8 bytes
+```
+
+Now change `struct` to `union`:
+
+```c
+union Example
+{
+    int a;
+    int b;
+};
+```
+
+A union is completely different. Both members of a union use the **same memory**.
+
+```text
+union Example
+
+┌────────────────────┐
+│                    │
+│   a OR b           │
+│   same memory      │
+│                    │
+└────────────────────┘
+       4 bytes
+```
+
+```c
+union Example u;
+```
+
+Then `u.a` and `u.b` refer to the same starting address.
+
+A struct gives every member its own storage:
+
+```text
+a -> memory A
+b -> memory B
+c -> memory C
+```
+
+whereas a union lets all members share the same storage:
+
+```text
+a ──┐
+b ──┼──> same memory
+c ──┘
+```
+
+The size of a union is large enough to hold its largest member, taking alignment requirements into consideration.
+
+This is one reason unions are useful when working close to hardware, because the same memory can be interpreted in different ways.
+
+---
+
