@@ -9,7 +9,8 @@ char name[20];
 int age;
 float height;
 ```
-Without a **struct**, these are three separate variables, each of these variables stored somewhere at different addresses in memrory. But logically, they all describe one student. A struct lets us to group different datatypes together.
+
+Without a **struct**, these are three separate variables, and each variable can be stored at a different address in memory. But logically, they all describe one student. A struct allows us to group different data types together into a single type. A **structure** is a user-defined data type that can be used to group elements of different data types into a single type.
 
 ```c
 struct Student
@@ -19,7 +20,10 @@ struct Student
     float height;
 };
 ```
-Now struct Student describes a new data type. We can create a variable ```c struct Student s1;```.  Conceptually, 
+
+Now `struct Student` describes a new data type. We can create a variable ```c struct Student s1;```
+
+Conceptually,
 
 ```text
 s1
@@ -35,10 +39,17 @@ s1
 
 ## 2. Accessing struct members
 
-With the help of (.) dot operator, we can access the members of the Structure. ```c s1.age = 25; s1.height = 165.5; printf("%d", s1.age); ``` would print the age if already assigned. 
+With the help of the `.` dot operator, we can access the members of a structure.
 
+```c
+s1.age = 25;
+s1.height = 165.5;
 
-Lets consider the below code snippet:
+printf("%d", s1.age);
+```
+
+The above `printf()` would print the value of `age`, assuming it has already been assigned.
+Let's consider the below code snippet:
 
 ```c
 struct Person
@@ -49,7 +60,8 @@ struct Person
 
 struct Person p1;
 ```
-and assuming sizeof(int) = 4 and no padding, 
+
+Assuming `sizeof(int) = 4` and there is no padding, if `p1` starts at address `0x20000000`:
 
 ```text
 p1 starts at 0x20000000
@@ -59,21 +71,27 @@ Address          Member
 0x20000000       age  ─┐
 0x20000001          │   │ 4 bytes
 0x20000002          │   │
-0x20000003       ───┘   │
+0x20000003       ───┘
 ────────────────────────
 0x20000004       salary ─┐
 0x20000005           │    │ 4 bytes
 0x20000006           │    │
 0x20000007       ────┘
 ```
-So ,
-```text
-p1.age    → offset 0
-p1.salary → offset 4
-```
-**A struct's members occupy different memory locations, one after another (subject to padding/alignment).**
 
-Suppose, to the above code snippet, lets create ```c struct Person *ptr = &p1;``` We know, `ptr → 0x20000000` Now, instead of `p1.age`, we can write `ptr-> age`. Here `->`means that the pointer points to a struct. Go to that struct and access this member.
+So,
+
+```text
+p1.age    -> offset 0
+p1.salary -> offset 4
+```
+
+**A struct's members occupy different memory locations, one after another, subject to padding and alignment.**
+
+Suppose, to the above code snippet, we create ```c struct Person *ptr = &p1; ``` We know ```text ptr -> 0x20000000 ```
+
+Now, instead of ```c p1.age ``` we can write ```c ptr->age ```
+Here, `->` means that we have a pointer to a structure, and we want to access a member of the structure pointed to by that pointer.
 
 ```text
 ptr
@@ -86,4 +104,7 @@ ptr
 │ salary          │ ← ptr->salary
 └─────────────────┘
 ```
-**`p1.age` and `(&p1)->age`are equivalent. Because &p1 gives us a pointer to p1. And thats why  ptr -> age is also equivalent to (*ptr).age**
+
+`p1.age` and `(&p1)->age` are equivalent because `&p1` gives us the address of `p1`, which is a pointer to the structure.
+Also, ```c ptr->age ``` is equivalent to ```c (*ptr).age``` because `*ptr` gives us the structure itself, and then `.` is used to access its member.
+
