@@ -5,6 +5,7 @@ A deep dive into C programming with an Embedded Systems focus.
 This repository documents my journey of learning C from scratch specially for Embedded Systems development.
 
 My goal is to build strong fundamentals in:
+
 - C programming
 - Problem solving
 - Memory concepts
@@ -12,6 +13,7 @@ My goal is to build strong fundamentals in:
 - STM32 / Microcontroller development
 
 ## Topics
+
 - Basic Foundations
 - Variables and Data Types
 - Input and Output
@@ -28,6 +30,7 @@ My goal is to build strong fundamentals in:
 - Enums and Typedefs
 
 ## Tools & Technologies
+
 - C
 - GCC Compiler
 - STM32CubeIDE
