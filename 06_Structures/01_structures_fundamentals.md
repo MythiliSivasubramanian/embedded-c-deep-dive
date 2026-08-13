@@ -644,3 +644,162 @@ In this particular example, it still happens to occupy 16 bytes, because the mem
 **To reduce padding, members with larger alignment requirements are generally placed before members with smaller alignment requirements.This is a practical layout rule, not a requirement of the C language. The exact result depends on the target ABI/compiler.**
 
 ---
+
+
+# What else can affect padding?
+
+Apart from order of members (as discussed in detail above, small quick example below), there are other things that can affect the layout.
+
+### 1. Member ordering
+
+This is the normal way to reduce padding.
+
+For example:
+
+```c
+struct A
+{
+    char a;
+    int b;
+    char c;
+};
+```
+
+may require more padding than:
+
+```c
+struct B
+{
+    int b;
+    char a;
+    char c;
+};
+```
+
+Both structures contain exactly the same data, but their memory layouts can be different.
+
+---
+
+### 2. Using appropriate data types
+
+The sizes and alignment requirements of the members affect padding.
+
+For example:
+
+```c
+struct Example
+{
+    char a;
+    int b;
+    char c;
+};
+```
+
+has different layout requirements from:
+
+```c
+struct Example
+{
+    char a;
+    short b;
+    char c;
+};
+```
+
+because `short` generally has a smaller alignment requirement than `int`.
+
+So choosing the correct data type can sometimes reduce padding.
+
+However, **we should never change a data type just to reduce padding if the data actually requires the original type**.
+
+For example, don't change:
+
+```c
+uint32_t counter;
+```
+
+to:
+
+```c
+uint16_t counter;
+```
+
+just to save two bytes if the counter can actually need values larger than 65535.
+
+---
+
+### 3. Bit-fields
+
+Bit-fields can allow several small pieces of information to occupy individual bits within the same storage unit.
+
+For example:
+
+```c
+struct Flags
+{
+    unsigned int ready : 1;
+    unsigned int error : 1;
+    unsigned int busy  : 1;
+};
+```
+
+Instead of giving each flag a whole `unsigned int`, the compiler can place them into bits of the same storage unit.
+
+Conceptually:
+
+```text
+31                         3  2    1     0
+┌───────────────────────────┬────┬─────┬─────┐
+│                           │busy│error│ready│
+└───────────────────────────┴────┴─────┴─────┘
+```
+
+This can save space.
+
+**But bit-fields are a separate topic**, and they have implementation-dependent layout details. For embedded hardware registers, we need to be particularly careful with them.
+
+---
+
+### 4. Packed structures
+
+Some compilers provide a way to tell the compiler to reduce or eliminate padding.
+
+For example, GCC provides:
+
+```c
+
+struct __attribute__((packed)) Example
+{
+    char a;
+    int b;
+    char c;
+};
+
+```
+
+This can produce a layout such as:
+
+```text
+
+Offset    0    1    2    3    4    5
+          ┌────┬───────────────┬────┐
+          │ a  │       b       │ c  │
+          │1 B │     4 bytes   │1 B │
+          └────┴───────────────┴────┘
+          
+```
+
+So the structure may occupy ```text 6 bytes``` instead of 12. However, packed structures should not be treated as a general better version of a struct. Because they can create unaligned members.
+
+For example:
+
+```text
+a       → offset 0
+b       → offset 1   ← int is now unaligned
+```
+
+And that can have consequences for performance or even correctness on some architectures.
+
+So > **Don't use packing simply because we want to save RAM.** Use it when we specifically need a tightly packed memory representation, such as certain binary formats or protocol layouts, and we understand the target architecture's requirements.
+
+---
