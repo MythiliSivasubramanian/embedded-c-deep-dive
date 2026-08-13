@@ -545,3 +545,102 @@ Offset    0    1    2    3    4    5    6    7
 So ```text sizeof(struct Test) = 8 bytes ``` by reordering the members. Instead of ```text 12 bytes ``` which is before reordering the members. So simply changing the order of the members reduced the structure size from 12 bytes to 8 bytes.
 
 ---
+
+### Why does changing the order help?
+
+The idea is to place members with larger alignment requirements before members with smaller alignment requirements.
+
+For example:
+
+```text
+8-byte aligned members
+        ↓
+4-byte aligned members
+        ↓
+2-byte aligned members
+        ↓
+1-byte aligned members
+```
+
+For example:
+
+```c
+struct Example
+{
+    double   a;
+    int      b;
+    short    c;
+    char     d;
+};
+```
+
+Conceptually:
+
+```text
+double → 8-byte alignment
+int    → 4-byte alignment
+short  → 2-byte alignment
+char   → 1-byte alignment
+```
+
+This ordering often minimizes unnecessary gaps between members.
+
+But it is important to say **often**, not always. The exact layout depends on the target compiler, ABI, alignment rules, and any packing directives.
+
+Assume the structure starts at offset 0.
+
+```text
+Offset    0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
+          ┌───────────────────────────────┬───────────────────────┬───────────┬───────────┐
+          │             double a          │         int b         │  short c  │   char d  │
+          │            8 bytes            │       4 bytes         │  2 bytes  │   1 byte  │
+          └───────────────────────────────┴───────────────────────┴───────────┴───────────┘
+
+So the offsets are:
+
+a → offset 0
+b → offset 8
+c → offset 12
+d → offset 14
+
+```
+
+There is no padding between the members in this particular layout. After d, we have used `8 + 4 + 2 + 1 = 15 bytes`. But the structure's alignment is 8 because of double. Therefore, the total structure size is rounded up to the next multiple of 8: `15 → 16`. So there is 1 byte of trailing padding.
+
+```text
+Offset    0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
+          ┌───────────────────────────────┬───────────────────────┬───────────┬────┬───────┐
+          │             double a          │         int b         │  short c  │ d  │   P   │
+          │            8 bytes            │       4 bytes         │  2 bytes  │1 B │  1 B  │
+          └───────────────────────────────┴───────────────────────┴───────────┴────┴───────┘
+```
+Therefore `sizeof(struct Example) = 16 bytes`
+
+Now lets compare with a bad ordering. Suppose we write:
+
+```c
+struct Example
+{
+    char   d;
+    short  c;
+    int    b;
+    double a;
+};
+
+```
+The compiler has to insert padding to satisfy the alignment requirements:
+
+```text
+
+Offset    0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
+          ┌────┬────┬───────────┬───────────────────────┬───────────────────────────────┐
+          │ d  │ P  │  short c  │         int b         │           double a            │
+          │1 B │1 B │  2 bytes  │       4 bytes         │           8 bytes             │
+          └────┴────┴───────────┴───────────────────────┴───────────────────────────────┘
+```
+
+In this particular example, it still happens to occupy 16 bytes, because the members naturally fit into the 16-byte layout. But with other combinations of members, poor ordering can create much more padding.
+
+**To reduce padding, members with larger alignment requirements are generally placed before members with smaller alignment requirements.This is a practical layout rule, not a requirement of the C language. The exact result depends on the target ABI/compiler.**
+
+---
