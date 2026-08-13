@@ -476,3 +476,72 @@ struct GPIO
 ```
 
 That is where **struct layout, alignment, padding, and memory-mapped hardware** all come together.
+
+## How can we reduce structure padding?
+
+Padding is sometimes necessary because of the alignment requirements of the members. Inorder to save the memory, we can reduce the amount of padding by carefully choosing the order of the structure members.
+
+Consider:
+
+```c
+struct Test
+{
+    char a;
+    int b;
+    char c;
+};
+```
+
+Assuming:
+
+```text
+char -> 1 byte, alignment 1
+int  -> 4 bytes, alignment 4
+```
+
+If the structure starts at offset `0`:
+
+```text
+
+Offset   0──────3    4──────7    8    9──────11
+         ┌────────┐ ┌────────┐ ┌───┐ ┌────────┐
+         │a + P   │ │   b    │ │ c │ │   P    │
+         └────────┘ └────────┘ └───┘ └────────┘
+           4 bytes    4 bytes  1 B    3 bytes
+           
+a = member a
+b = member b
+c = member c
+P = padding
+```
+
+So ```text sizeof(struct Test) = 12 bytes ```, Wehereas the actual data only requires ```text 1 + 4 + 1 = 6 bytes ``` but the structure occupies 12 bytes because of padding.
+
+One way here to reduce the padding is to **order the members according to their alignment requirements**.
+
+For example:
+
+```c
+struct Test
+{
+    int b;
+    char a;
+    char c;
+};
+```
+
+Now the compiler can place the members like this:
+
+```text
+
+Offset    0    1    2    3    4    5    6    7
+          ┌─────────────────┬────┬────┬────────┐
+          │        b        │ a  │ c  │padding │
+          └─────────────────┴────┴────┴────────┘
+             4 bytes          1B   1B    2B
+             
+```
+
+So ```text sizeof(struct Test) = 8 bytes ``` by reordering the members. Instead of ```text 12 bytes ``` which is before reordering the members. So simply changing the order of the members reduced the structure size from 12 bytes to 8 bytes.
+
+---
