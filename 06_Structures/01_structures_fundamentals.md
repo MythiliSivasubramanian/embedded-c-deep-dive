@@ -943,3 +943,74 @@ struct Peripheral
 We are not trying to make this structure smaller. We are trying to make the C structure's memory layout exactly match the hardware memory map.
 
 ---
+
+### #pragma
+
+#pragma is a preprocessor directive in C. It is used to give special instructions to the compiler.
+Unlike normal C statements such as ```c int x; x = 10;``` a #pragma does not represent an operation that the CPU executes. Instead, it tells the compiler to do something in a particular way. The important thing is that #pragma is compiler-dependent. Different compilers can support different #pragma directives.
+
+For example, GCC, ARM GCC, MSVC, and other compilers may provide different pragmas.
+
+#### #pragma pack
+
+For our current topic, the important one is ```c #pragma pack``` It can be used to control the maximum alignment of structure members, which can change the amount of padding inserted by the compiler.
+
+
+Consider:
+```c
+struct Test
+{
+    char a;
+    int b;
+    char c;
+};
+```
+Assuming normal alignment: `char → 1-byte alignment, int  → 4-byte alignment `
+
+We get :
+```text
+Offset    0    1────3    4────7    8    9────11
+          ┌───┬────────┬────────┬───┬────────┐
+          │ a │padding │   b    │ c │padding │
+          │1B │  3 B   │  4 B   │1B │  3 B   │
+          └───┴────────┴────────┴───┴────────┘
+```
+So `sizeof(struct Test) = 12 bytes`. Now suppose we tell the compiler `#pragma pack(1)`, then this tells a compiler that supports this directive to use a maximum member alignment of 1 byte for the packed structure.
+```c
+struct Test
+{
+    char a;
+    int b;
+    char c;
+};
+```
+can be laid out as:
+```text
+Offset    0    1────4    5
+          ┌───┬────────┬───┐
+          │ a │   b    │ c │
+          │1B │  4 B   │1B │
+          └───┴────────┴───┘
+```
+Now `sizeof(struct Test) = 6 bytes`. So `Normal alignment → 12 bytes, Packed alignment → 6 bytes`
+
+The important thing is that the padding has not been magically removed from memory after compilation. Rather, the compiler was instructed to use different alignment rules when laying out that structure.
+But there is a danger. 
+
+With normal alignment:
+```text
+Offset    0    1────3    4────7
+          ┌───┬────────┬────────┐
+          │ a │padding │   b    │
+          └───┴────────┴────────┘
+```
+b starts at offset 4. So if the structure starts at `b → 0x20000004`, which is properly 4-byte aligned.
+With packing:
+```text
+Offset    0    1────4    5
+          ┌───┬────────┬───┐
+          │ a │   b    │ c │
+          └───┴────────┴───┘
+``` 
+b starts at offset 1. If the structure starts at `0x20000000`, then `b → 0x20000001`. Now b is unaligned. That's why packing isn't simply, we would use pragma pck with caution. 
+
