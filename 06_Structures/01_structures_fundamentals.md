@@ -1014,3 +1014,35 @@ Offset    0    1────4    5
 ``` 
 b starts at offset 1. If the structure starts at `0x20000000`, then `b → 0x20000001`. Now b is unaligned. That's why packing isn't simply, we would use pragma pck with caution. 
 
+### #pragma pack is not part of standard C
+
+```c #pragma pack(1)``` is not a standard C feature with identical behavior on every compiler. It is a compiler-specific extension.
+For example, GCC/Clang also provide other mechanisms such as: ```__attribute__((packed))``` while other compilers have their own syntax.
+So if we see: ```c #pragma pack(1)``` we  should immediately think, this is a compiler-specific instruction controlling structure layout/alignment.
+
+### Why is this relevant to Embedded C?
+
+**We have two very different situations.
+
+**Normal data structure**
+
+We might want to reduce memory usage:
+```c
+struct SensorData
+{
+    char status;
+    int value;
+    char error;
+};
+```
+Here, changing member order may reduce padding naturally.
+We generally prefer this:
+```text
+    reorder members
+        ↓
+reduce padding
+        ↓
+keep normal alignment
+```
+rather than immediately using packing.
+
