@@ -1201,6 +1201,7 @@ The contents of the padding bytes are not part of the structure's member values,
 Now, what do we do incase, if we would like **to copy all bytes of the object representation, including padding bytes** 
 
 ### memcpy
+**`#include <string.h>` is needed when using the standard library functions: `memcpy()`and `memmove()`.** As this provides the declarations for standard memory/string functions.
 
 Lets consider, 
 ```c
@@ -1484,3 +1485,64 @@ copy Left → Right     copy Right → Left
 
 ```
 And that is why memmove() is safe for overlapping memory, while memcpy() does not guarantee correct behavior when the regions overlap.
+
+### Structure assignment vs memcpy()/memmove()
+
+Since we learnt Structure assignment, memcpy() and memmove(), lets quickly consider the below example code snippet and understand which is the simplest way to copy  p1 into p2.
+
+Lets consider, 
+
+```c
+struct Point
+{
+    int x;
+    int y;
+};
+
+struct Point p1;
+struct Point p2;
+
+p1.x = 10;
+p1.y = 20;
+```
+The simplest way to do is the structure assignment `p2 = p1`. Then `p2.x = 10 and p2.y = 20`. later, when we do `p2.x = 50`, only `p2.x` will have the new value 50, whereas `p1.x `will still have the old value 10. So p1 and p2 are two separate structure objects. Changing one does not change the other.
+
+memcpy() can be used when source and destination must NOT overlap.  memcpy(destination, source, number_of_bytes) ie, when the source and destination memory regions are separate / non-overlapping.
+
+Example:
+```c
+char src[] = "Hello";
+char dest[6];
+
+
+memcpy(dest, src, 6);
+```
+
+Here:
+```text
+src:   H e l l o \0
+       └─────────┘
+
+
+dest:  [           ]
+       └─────────┘
+```
+
+They are separate memory regions. So memcpy() is appropriate.
+
+memmove() can be used when overlap is possible. ie, memmove(destination, source, number_of_bytes); when source and destination may overlap.
+
+For example:
+```c
+char str[] = "ABCDE";
+memmove(&str[1], &str[0], 3);
+```
+
+Here:
+```text
+Source:       A B C
+              ↑ ↑ ↑
+Destination:    A B C
+```
+
+The memory regions overlap. memmove() handles this safely by choosing the appropriate copying direction.
