@@ -1198,5 +1198,289 @@ The contents of the padding bytes are not part of the structure's member values,
 - values of t1 are copied to t2
 - padding bytes values of not guranteed to be copied / they differ. 
 
+Now, what do we do incase, if we would like **to copy all bytes of the object representation, including padding bytes** 
+
+### memcpy
+
+Lets consider, 
+```c
+struct Test
+{
+    int a;
+    char b;
+};
+
+struct Test s1;
+struct Test s2;
+
+s1.a = 100;
+s2.b = `A`;
+
+memcpy(&s2, &s1, sizeof(s1));
+
+```
+sizeof(struct Test) = 8 bytes. So the layout is: 
+
+```text
+Offset:   0    1    2    3    4    5    6    7
+          ┌───────────────┬────┬─────────────────┐
+          │       a       │ b  │    padding      │
+          │    4 bytes    │1 B │     3 bytes     │
+          └───────────────┴────┴─────────────────┘
+```
+its padding bytes happen to contain AA BB CC. When we do ```c memcpy(&s2, &s1, sizeof(s1));```, what happens to the 3 trailing structure padding bytes? Do they remain undefined or do they contain AA BB CC same as s1? The contents /Values of Structure padding bytes of s2 will have the same values / contents of Structure padding bytes of s1. memcpy() copies all 8 bytes, byte by byte.  
+
+memcpy() copies the object representation byte by byte, including any padding bytes, when the requested size covers them.
+
+```text
+Offset:    0    1    2    3    4    5    6    7
+           ┌───────────────┬────┬─────────────────┐
+s1:        │      a        │ b  │    padding      │
+           │     100       │ A  │   AA BB CC      │
+           └───────────────┴────┴─────────────────┘
+           
+After memcpy(&s2, &s1, sizeof(s1)):
+
+Offset:    0    1    2    3    4    5    6    7
+           ┌───────────────┬────┬─────────────────┐
+s2:        │      a        │ b  │    padding      │
+           │     100       │ A  │   AA BB CC      │
+           └───────────────┴────┴─────────────────┘
+           
+s1 padding = AA BB CC
+s2 padding = AA BB CC
+
+```
+
+**How do we copy a specified number of bytes from one memory location to another memory location?**
+
+**memmove()** is a standard C library function used to copy a specified number of bytes from one memory location to another.
+
+```c memmove(destination, source, number_of_bytes);```
+
+For example:
+
+```c
+char src[] = "Hello";
+char dest[6];
+
+memmove(dest, src, 6);
+```
+Conceptually:
+```text
+After memmov():
+src                         dest
+
+'H'                         'H'
+'e'                         'e'
+'l'          ──────────►    'l'
+'l'                         'l'
+'o'                         'o'
+'\0'                        '\0'
+
+```
+**memmove() works with raw bytes in memory. It doesn't know that the bytes represent a char, int, struct, etc. It only sees addresses and a number of bytes.**
+
+Considering the above example code snippet, C stores the string including the terminating '\0'. So src contains 6 bytes.
+```text
+src
+┌─────┬─────┬─────┬─────┬─────┬─────┐
+│ 'H' │ 'e' │ 'l' │ 'l' │ 'o' │ '\0'│
+└─────┴─────┴─────┴─────┴─────┴─────┘
+   0     1     2     3     4     5
+   
+after memmove():
+
+src                            
+┌────┬────┬────┬────┬────┬────┐
+│ H  │ e  │ l  │ l  │ o  │\0  │
+└────┴────┴────┴────┴────┴────┘
+
+dest
+┌────┬────┬────┬────┬────┬────┐
+│ H  │ e  │ l  │ l  │ o  │\0  │
+└────┴────┴────┴────┴────┴────┘
+
+```
+So what's the **difference between memcpy() and memmove(), if both copy from source to destionation with the mentioned number of bytes?**
+
+Syntax:
+```c
+memcpy(destination, source, number_of_bytes);
+memmove(destination, source, number_of_bytes);
+```
+The difference is ***what happens when source and destination memory overlap.***
+
+Lets consider the same example:
+```c
+char src[] = "Hello";
+char dest[6];
+```
+src and dest are completely separate memory areas. Both memcpy() and memmove() can copy this safely. After either one:
+```
+src:
+┌────┬────┬────┬────┬────┬────┐
+│ H  │ e  │ l  │ l  │ o  │ \0 │
+└────┴────┴────┴────┴────┴────┘
+
+dest:
+┌────┬────┬────┬────┬────┬────┐
+│ H  │ e  │ l  │ l  │ o  │ \0 │
+└────┴────┴────┴────┴────┴────┘
+```
+***So when memory doesn't overlap, there is practically no difference for us to worry about.*** The difference matters only when the    source and destionation addresses overlaps.
+
+For example, ```c char str[] = "ABCDE";```. The Memory conceptually looks like :
+
+```text
+Address
+100   101   102   103   104
+ A     B     C     D     E
+``` 
+
+Now suppose we want to move A B C these 3 bytes to the right by 1 position, then the source and destionation memory address overlap.
+
+```text
+Source:      100 101 102 103
+              A   B   C   D
+
+Destination: 101 102 103
+              ?   ?   ?
+```
+
+`memmove(&str[1], &str[0], 3);`
+
+Before:
+
+```text
+Address:   100   101   102   103   104
+           ┌────┬────┬────┬────┬────┐
+           │ A  │ B  │ C  │ D  │ E  │
+           └────┴────┴────┴────┴────┘
+             ↑
+           source
+
+We want to copy 3 bytes starting from 100 to starting at 101. (right shift by 1 position)
+
+So: Source:   100  101  102
+               A    B    C
 
 
+Destination:  101  102  103
+```
+Here's the important problem: If we simply copied from left to right, 100 -> 101, we would get
+
+```text
+Address:   100   101   102   103
+           ┌────┬────┬────┬────┐
+           │ A  │ A  │ C  │ D  │
+           └────┴────┴────┴────┘
+           
+Then 101 -> 102, But 101 no longer contains B. We already overwrote it with A!
+
+Address:   100   101   102   103
+           ┌────┬────┬────┬────┐
+           │ A  │ A  │ A  │ D  │
+           └────┴────┴────┴────┘
+           
+then 102 -> 103, copy also uses overwritten data.
+Address:   100   101   102   103
+           ┌────┬────┬────┬────┐
+           │ A  │ A  │ A  │ A  │
+           └────┴────┴────┴────┘
+
+```
+That's the problem with overlapping memory. ***memmove()*** is specifically designed to handle this situation safely. It effectively chooses a safe direction for the copy. In this case, because the destination is to the right of the source, it copies from right to left:
+
+```text
+102-> 103   (C)
+101-> 102   (B)
+100-> 101   (A)
+```
+Result (After memmove():
+
+```text
+Address:   100   101   102   103   104
+           ┌────┬────┬────┬────┬────┐
+           │ A  │ A  │ B  │ C  │ E  │
+           └────┴────┴────┴────┴────┘
+```
+So the final string is "AABCE". That's the main idea of memmove(): it handles overlapping source and destination correctly.
+When source and destination overlap, memmove() chooses a safe copy direction so that source bytes are not overwritten before they are copied.
+
+Lets consider an other example :
+```c
+char str[] = "ABCDE";
+memmove(&str[0], &str[1], 3); // Copy 3 bytes from &str[1] to &str[0].
+```
+
+Before copying:
+```text
+Address:   100   101   102   103   104
+           ┌────┬────┬────┬────┬────┐
+           │ A  │ B  │ C  │ D  │ E  │
+           └────┴────┴────┴────┴────┘
+```
+We want to copy 3 bytes from &str[1] to &str[0].
+
+```text
+Source:       101   102   103
+               B     C     D
+
+Expected Destination:  100   101   102
+                        B     C    D
+```
+The destination is now to the LEFT of the source. To avoid overwriting the original B, C, and D, should we copy from ***left to right***
+Let's see why. We have:
+
+```text
+Source:       101   102   103
+               B     C     D
+
+Destination:  100   101   102
+```
+**We copy left → right:**
+```text
+101-> 100    B
+102-> 101    C
+103-> 102    D
+```
+
+```text
+steps:
+Start:
+100   101   102   103
+ A     B     C     D
+
+101-> 100:
+100   101   102   103
+ B     B     C     D
+
+102-> 101:
+100   101   102   103
+ B     C     C     D
+
+103-> 102:
+100   101   102   103
+ B     C     D     D
+ ```
+
+Finally, we will have `B C D D E`
+
+The important pattern is ,
+
+```text
+Overlap?
+           ↓
+          YES
+           ↓
+   ┌───────┴────────────────┐
+   ↓                        ↓
+Destination             Destination
+is LEFT                 is RIGHT
+of source               of source
+   ↓                        ↓
+copy Left → Right     copy Right → Left
+
+```
+And that is why memmove() is safe for overlapping memory, while memcpy() does not guarantee correct behavior when the regions overlap.
