@@ -1046,3 +1046,157 @@ keep normal alignment
 ```
 rather than immediately using packing.
 
+**Hardware registers** for STM32 peripheral registers, our goal is not to make the structure as small as possible. Rather our goal is to 
+make the structure layout exactly match the hardware register addresses.
+
+For example:
+```c
+struct GPIO
+{
+    uint32_t MODER;     // 0x00
+    uint32_t OTYPER;    // 0x04
+    uint32_t OSPEEDR;   // 0x08
+    uint32_t PUPDR;     // 0x0C
+    uint32_t IDR;       // 0x10
+    uint32_t ODR;       // 0x14
+};
+```
+Here every member is naturally 4-byte aligned, so we don't need packing at all.
+
+**Array vs Structure**
+
+Both Array and Structure have contiguous block of memory. Array is the group of same type of elements, whereas Structure is a user defined type, which allows us to group elements of different data types. 
+
+For example,  ```C int arr[3];``` in memory represented conceputally as 
+```text
+Offset:   0        1        2       3 4        5        6     7  8        9        10     11
+          ┌──────────────────────────┬──────────────────────────┬──────────────────────────┐
+          │         arr[0]           │         arr[1]           │         arr[2]           │
+          │  0       1       2      3│  4       5       6      7│  8       9       10    11│
+          └──────────────────────────┴──────────────────────────┴──────────────────────────┘
+
+There cannot be gap betwen arr[0] and arr[1]
+
+```
+So, address of arr[1] = address of arr[0] + sizeof (type(int)) and similarly add[2] = address of arr[1] + sizeof(int). Thats why, 
+`arr[i] = *(arr + i)`. The compiler knows that every element has the same size.
+
+Now, lets consider a Structure.
+
+```c
+struct Test
+{
+    char a;
+    int  b;
+    char c;
+};
+```
+Here, the members are of different type and has different alignment. char requires 1 byte and has 1 byte alignment, int occupies 4 bytes and has 4 byte alignment. Now the compiler has to satisfy the alignment requirement of each individual member. Hence the structure contains padding inside itself.
+
+In Array, its elements are placed immediately after the previous element, whereas in Structure, each element is placed at an offset that satisfies that member's alignment requirement.
+
+```text
+ARRAY
+─────────────────────────────────────────
+
+Element 0 | Element 1 | Element 2
+           ↑
+           No gap
+
+
+STRUCTURE
+─────────────────────────────────────────
+
+Member A | Padding | Member B | Member C
+                    ↑
+                    Padding may be required because members have different alignments.
+
+
+ARRAY OF STRUCTURES
+─────────────────────────────────────────
+
+┌──────────── struct 0 ────────────┐
+│ members + internal/trailing pad  │
+└──────────────────────────────────┘
+┌──────────── struct 1 ────────────┐
+│ members + internal/trailing pad  │
+└──────────────────────────────────┘
+```
+
+## structure assignment
+
+```c
+struct Person
+{
+    int age;
+    int salary;
+};
+
+struct Person p1;
+struct Person p2;
+
+p1.age = 25;
+p1.salary = 3000;
+
+```
+So conceptually,
+
+```text
+p1
+┌──────────────┐            
+│ age    = 25  │
+├──────────────┤
+│ salary = 3000│
+└──────────────┘
+
+p2
+┌──────────────┐
+│ age          │
+├──────────────┤
+│ salary       │
+└──────────────┘
+
+```
+Now, wehen we do **structure assignment**, ```c p2 = p1;``` The result is,
+
+```text
+p1                         p2
+┌──────────────┐           ┌──────────────┐
+│ age    = 25  │  ───────► │ age    = 25  │
+├──────────────┤           ├──────────────┤
+│ salary = 3000│  ───────► │ salary = 3000│
+└──────────────┘           └──────────────┘
+```
+**The values of the members are copied.** Here it doesnot mean, that p1 is pointing to p2. They remain two independent objects. If we do, ```c p2.age = 40``` then p1.age is 25 and p2.age is 40. So the assignment copied the structure's value, not its address. Structure assignment creates a separate copy of the member values.
+
+Now, lets quickly consider an another example with Structure padding:
+```c
+struct Test
+{
+    char a;
+    int b;
+    char c;
+};
+
+struct Test t1;
+struct Test t2;
+
+t1.a = 10;
+t1.b = 20;
+t1.c = 30;
+
+t2 = t1;
+```
+Here, the size of the structure = char a (1 byte) + 3 bytes padding + int b(4 bytes) + char c(1 byte) + 3 bytes padding = 12 bytes.
+So, when we do structure assignment, ie ```c t2 = t1```, will the entire 12 bytes(including structure padding) be copied?? We are sure that, the actual values of a,b and c will be copied from t1 to t2. But what about the structure padding layout and the contents/ values inside the Structure padding bytes? 
+
+The contents of the padding bytes are not part of the structure's member values, and C does not give us a guarantee that their byte contents are preserved by structure assignment.
+
+***Structure assignment copies the values of all members from the source structure to the destination structure. The structure layout including the padding layout (total 12 bytes) is copied. But the values / contents inside the padding bytes are not guaranteed and not preserved. Only the padding layout exsits in t2 as in t1***
+
+- Both objects t1 and t2 have 12 bytes. (padding layout/ padding positions same)
+- values of t1 are copied to t2
+- padding bytes values of not guranteed to be copied / they differ. 
+
+
+
