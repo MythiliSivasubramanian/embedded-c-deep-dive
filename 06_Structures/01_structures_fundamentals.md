@@ -1546,3 +1546,104 @@ Destination:    A B C
 ```
 
 The memory regions overlap. memmove() handles this safely by choosing the appropriate copying direction.
+
+### Nested Structures :
+
+```c
+struct Address
+{
+    int house_no;
+    int pin;
+};
+
+struct Person
+{
+    int age;
+    struct Address address;
+};
+
+struct Person p1;
+```
+
+Conceptually, p1:
+
+```text
+p1
+┌─────────────────────┐
+│ age                 │
+├─────────────────────┤
+│ address             │
+│   ├── house_no      │
+│   └── pin           │
+└─────────────────────┘
+```
+How do we access house_no? p1.address.house_no because address itself is a structure inside p1, we first access address, then access its member house_no.
+
+Similarly: ```c p1.address.pin``` and ```c p1.age```
+
+For example:
+
+```c
+p1.age = 25;
+p1.address.house_no = 10;
+p1.address.pin = 47051;
+```
+
+Conceptually,
+```text
+
+p1
+┌─────────────────────┐
+│ age = 25            │
+├─────────────────────┤
+│ address             │
+│   ┌───────────────┐ │
+│   │ house_no = 10 │ │
+│   │ pin = 47051   │ │
+│   └───────────────┘ │
+└─────────────────────┘
+```
+Suppose, we have ```c struct Person *ptr = &p1;``` , how would we access house_no using ptr? ptr -> address.house_no because, `ptr` is a pointer to struct Person, so we use -> to access a member of Person ```c ptr -> address```. But address itself is not a pointer. It is an actual struct Address object inside Person. So once we reach address, we use . 
+
+```text
+ptr -> address . house_no
+       │          │
+       │          └── address is a struct → .
+       └── ptr is a pointer → ->
+```
+
+Suppose instead we had :
+
+```c
+struct Person
+{
+    int age;
+    struct Address *address;
+};
+```
+Here, `address` is a pointer to  struct Address. If ```c struct Person *ptr = &p1;```, then we can access house_no by ```c ptr -> address -> house_no```.
+
+We have 
+```text
+
+ptr
+ │
+ │ -> because ptr is a pointer
+ ▼
+address
+ │
+ │ -> because address is also a pointer
+ ▼
+house_no
+
+```
+
+```text
+
+What are we accessing?
+        │
+        ├── if actual struct object then .
+        │
+        └── if pointer to struct   then ->
+        
+```
